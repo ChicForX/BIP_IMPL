@@ -12,8 +12,24 @@ def heuristic_pruning(model, threshold):
     return model
 
 
-# based on rate
+# pruning progressively
 def iterative_pruning(model, prune_rate):
+    for name, module in model.named_modules():
+        if isinstance(module, nn.Conv2d) or isinstance(module, nn.Linear):
+            weights = torch.abs(module.weight.data)
+            # already pruned in previous iterations
+            already_pruned = (module.activate_flag.data == 0)
+            weights[already_pruned] = 0
+
+            threshold = torch.quantile(weights, prune_rate)
+            mask = weights > threshold
+            module.activate_flag.data = mask.float()
+
+    return model
+
+
+# based on rate
+def onetime_pruning_by_rate(model, prune_rate):
     for name, module in model.named_modules():
         if isinstance(module, nn.Conv2d) or isinstance(module, nn.Linear):
             weights = torch.abs(module.weight.data)

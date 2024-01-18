@@ -1,5 +1,5 @@
 import torch
-from prune_utils import heuristic_pruning
+from prune_utils import heuristic_pruning, freeze_vars_by_key
 from config import config_dict
 import torch.nn.functional as F
 
@@ -13,6 +13,7 @@ class HeuristicTrainer:
 
     def train(self):
         self.model = heuristic_pruning(self.model, config_dict['heuristic_threshold'])
+        self.model = freeze_vars_by_key(self.model, config_dict['activate_key'])
 
         for epoch in range(self.epochs):
             self.model.train()

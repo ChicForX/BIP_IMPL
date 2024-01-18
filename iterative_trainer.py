@@ -1,7 +1,7 @@
 import torch.optim as optim
 import torch.nn.functional as F
 from config import config_dict
-from prune_utils import iterative_pruning
+from prune_utils import iterative_pruning, freeze_vars_by_key
 
 
 class IterativeTrainer:
@@ -13,6 +13,9 @@ class IterativeTrainer:
         self.optimizer = optim.SGD(model.parameters(), lr=config_dict['itr_lr'], momentum=momentum)
 
     def train(self):
+        # prune manually in iterative_pruning()
+        self.model = freeze_vars_by_key(self.model, config_dict['activate_key'])
+
         for epoch in range(self.epochs):
             self.model.train()
             total_loss = 0.0

@@ -9,7 +9,7 @@ config_dict = {
     "initial_prune_rate": 0.9,
     "itr_epochs": 30,
     "ft_lr": 1e-3,
-    "pr_lr": 1e-3,
+    "pr_lr": 1e-2,
     "pretrain_lr": 1e-3,
     "pretrained_model_file": "pretrained_model.pt",
     "ft_label": 0,
