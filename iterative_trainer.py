@@ -5,12 +5,13 @@ from prune_utils import iterative_pruning, freeze_vars_by_key
 
 
 class IterativeTrainer:
-    def __init__(self, model, train_loader, prune_rate, momentum=0.9):
+    def __init__(self, model, train_loader, prune_rate, device, momentum=0.9):
         self.model = model
         self.train_loader = train_loader
         self.prune_rate = prune_rate
         self.epochs = config_dict['itr_epochs']
         self.optimizer = optim.SGD(model.parameters(), lr=config_dict['itr_lr'], momentum=momentum)
+        self.device = device
 
     def train(self):
         # prune manually in iterative_pruning()
@@ -26,6 +27,7 @@ class IterativeTrainer:
                 self.model = iterative_pruning(self.model, prune_rate=self.prune_rate)
 
             for data, target in self.train_loader:
+                data, target = data.to(self.device), target.to(self.device)
                 # retrain
                 self.optimizer.zero_grad()
                 output = self.model(data)

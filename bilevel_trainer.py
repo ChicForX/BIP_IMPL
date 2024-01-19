@@ -1,11 +1,11 @@
 import torch.optim as optim
 import torch.nn.functional as F
 from config import config_dict
-from prune_utils import freeze_vars_by_key, unfreeze_vars_by_key, onetime_pruning_by_rate
+from prune_utils import freeze_vars_by_key, unfreeze_vars_by_key, onetime_pruning_by_rate, filter_pruning_by_rate
 
 
 class BilevelTrainer:
-    def __init__(self, model, train_loader, prune_rate, momentum=0.9):
+    def __init__(self, model, train_loader, prune_rate, device, structured_flag=False, momentum=0.9):
         self.model = model
         self.train_loader = train_loader
         self.prune_rate = prune_rate
@@ -13,6 +13,8 @@ class BilevelTrainer:
         self.optimizer_pr = optim.SGD(model.parameters(), lr=config_dict['pr_lr'], momentum=momentum)
         self.optimizer_ft = optim.SGD(model.parameters(), lr=config_dict['ft_label'], momentum=momentum)
         self.epoch_label = config_dict['ft_label']
+        self.structured_flag = structured_flag
+        self.device = device
 
     def train(self):
         for epoch in range(self.epochs):
@@ -24,6 +26,7 @@ class BilevelTrainer:
             self.epoch_label = self.epoch_label % 2
 
             for data, target in self.train_loader:
+                data, target = data.to(self.device), target.to(self.device)
 
                 if self.epoch_label == config_dict['ft_label']:
                     #  ----------------- pruning ---------------- #
@@ -31,7 +34,10 @@ class BilevelTrainer:
                     self.model = freeze_vars_by_key(self.model, config_dict['bias_key'])
                     self.model = unfreeze_vars_by_key(self.model, config_dict['activate_key'])
                     self.optimizer_pr.zero_grad()
-                    self.model = onetime_pruning_by_rate(self.model, self.prune_rate)
+                    if self.structured_flag:
+                        self.model = filter_pruning_by_rate(self.model, self.prune_rate)
+                    else:
+                        self.model = onetime_pruning_by_rate(self.model, self.prune_rate)
                     output = self.model(data)
                     loss = F.cross_entropy(output, target)
                     loss.backward()
