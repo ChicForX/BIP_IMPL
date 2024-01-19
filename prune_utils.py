@@ -59,7 +59,7 @@ def filter_pruning_by_rate(resnet18_instance, prune_rate, p=1):
     all_norms = []
 
     for name, module in resnet18_instance.model.named_modules():
-        if isinstance(module, nn.Conv2d) or isinstance(module, nn.Linear):
+        if isinstance(module, nn.Conv2d):
             norms = torch.norm(module.weight.data.view(module.out_channels, -1), p=p, dim=1)
             all_norms.append(norms)
 
@@ -69,7 +69,7 @@ def filter_pruning_by_rate(resnet18_instance, prune_rate, p=1):
 
     # prune by rate
     for name, module in resnet18_instance.model.named_modules():
-        if isinstance(module, nn.Conv2d) or isinstance(module, nn.Linear):
+        if isinstance(module, nn.Conv2d):
             norms = torch.norm(module.weight.data.view(module.out_channels, -1), p=p, dim=1)
             mask = norms > threshold
             reshape_size = (module.out_channels,) + (1,) * (module.weight.data.dim() - 1)

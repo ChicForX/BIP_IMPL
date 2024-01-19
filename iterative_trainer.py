@@ -23,7 +23,7 @@ class IterativeTrainer:
 
             # prune every 10 epochs
             if epoch % 10 == 0:
-                self.prune_rate *= 0.8
+                self.prune_rate *= 1.2
                 self.model = iterative_pruning(self.model, prune_rate=self.prune_rate)
 
             for data, target in self.train_loader:

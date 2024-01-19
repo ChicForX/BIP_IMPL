@@ -12,7 +12,7 @@ class BilevelTrainer:
         self.epochs = config_dict['itr_epochs']
         self.optimizer_pr = optim.SGD(model.parameters(), lr=config_dict['pr_lr'], momentum=momentum)
         self.optimizer_ft = optim.SGD(model.parameters(), lr=config_dict['ft_label'], momentum=momentum)
-        self.epoch_label = config_dict['ft_label']
+        self.epoch_label = config_dict['ft_label']  # 0
         self.structured_flag = structured_flag
         self.device = device
 
@@ -28,7 +28,7 @@ class BilevelTrainer:
             for data, target in self.train_loader:
                 data, target = data.to(self.device), target.to(self.device)
 
-                if self.epoch_label == config_dict['ft_label']:
+                if self.epoch_label == config_dict['pr_label']:
                     #  ----------------- pruning ---------------- #
                     self.model = freeze_vars_by_key(self.model, config_dict['weight_key'])
                     self.model = freeze_vars_by_key(self.model, config_dict['bias_key'])
