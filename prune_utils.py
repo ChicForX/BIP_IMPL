@@ -56,41 +56,27 @@ def onetime_pruning_by_rate(resnet18_instance, prune_rate):
 
 # filter-wise pruning, using norms
 def filter_pruning_by_rate(resnet18_instance, prune_rate, p=1):
-    all_norms = []
-
     for name, module in resnet18_instance.model.named_modules():
         if isinstance(module, nn.Conv2d):
             norms = torch.norm(module.weight.data.view(module.out_channels, -1), p=p, dim=1)
-            all_norms.append(norms)
-
-    # order
-    all_norms = torch.cat(all_norms)
-    threshold = torch.quantile(all_norms, prune_rate)
-
-    # prune by rate
-    for name, module in resnet18_instance.model.named_modules():
-        if isinstance(module, nn.Conv2d):
-            norms = torch.norm(module.weight.data.view(module.out_channels, -1), p=p, dim=1)
+            threshold = torch.quantile(norms, prune_rate)
             mask = norms > threshold
             reshape_size = (module.out_channels,) + (1,) * (module.weight.data.dim() - 1)
             module.activate_flag.data = mask.view(reshape_size).float()
-
     return resnet18_instance
 
 
 # freeze vars by name
 def freeze_vars_by_key(resnet18_instance, key):
-    for i, v in resnet18_instance.model.named_modules():
-        if hasattr(v, key):
-            if getattr(v, key) is not None:
-                getattr(v, key).requires_grad = False
+    for name, param in resnet18_instance.model.named_parameters():
+        if hasattr(param, key) and getattr(param, key) is not None:
+            param.requires_grad = False
     return resnet18_instance
 
 
 # unfreeze vars by name
 def unfreeze_vars_by_key(resnet18_instance, key):
-    for i, v in resnet18_instance.model.named_modules():
-        if hasattr(v, key):
-            if getattr(v, key) is not None:
-                getattr(v, key).requires_grad = True
+    for name, param in resnet18_instance.model.named_parameters():
+        if hasattr(param, key) and getattr(param, key) is not None:
+            param.requires_grad = True
     return resnet18_instance

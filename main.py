@@ -18,6 +18,7 @@ batch_size = config_dict['batch_size']
 epochs = config_dict['epochs']
 intl_prune_rate = config_dict['initial_prune_rate']
 one_time_prune_rate = config_dict['one_time_prune_rate']
+filter_prune_rate = config_dict['filter_prune_rate']
 
 transform = transforms.Compose([
     transforms.ToTensor(),
@@ -31,7 +32,7 @@ test_dataset = datasets.CIFAR10(root='./data', train=False, download=True, trans
 test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
 
-def train(res18):
+def init():
     # Parsing Command Line Parameters
     if len(sys.argv) < 2:
         print("Please input the distribution for the latent variables as argv[1]："
@@ -41,19 +42,32 @@ def train(res18):
 
     model_param = int(sys.argv[1])
     model_path = ''
+
+    if model_param == 3:
+        model = ResNet18(structured_flag=True).to(device)
+        pretrain_path = config_dict['pretrained_structured_file']
+    else:
+        model = ResNet18().to(device)
+        pretrain_path = config_dict['pretrained_unstructured_file']
+
     if model_param == 0:
         model_path += 'heuristic'
-        trainer = HeuristicTrainer(res18, train_loader, device)
+        trainer = HeuristicTrainer(model, train_loader, device)
     elif model_param == 1:
         model_path += 'iterative'
-        trainer = IterativeTrainer(res18, train_loader, intl_prune_rate, device)
+        trainer = IterativeTrainer(model, train_loader, intl_prune_rate, device)
     elif model_param == 2:
         model_path += 'bilevel_finegrained'
-        trainer = BilevelTrainer(res18, train_loader, one_time_prune_rate, device)
+        trainer = BilevelTrainer(model, train_loader, one_time_prune_rate, device)
     elif model_param == 3:
         model_path += 'bilevel_filterwise'
-        trainer = BilevelTrainer(res18, train_loader, one_time_prune_rate, device, structured_flag=True)
+        trainer = BilevelTrainer(model, train_loader, filter_prune_rate, device, structured_flag=True)
     model_path += '_resnet18.pth'
+
+    return model, trainer, pretrain_path
+
+
+def train(trainer):
 
     model = trainer.train()
 
@@ -62,16 +76,16 @@ def train(res18):
 
 if __name__ == "__main__":
 
-    res18 = ResNet18().to(device)
+    res18, trainer, pretrain_path = init()
 
     # pretrain
-    res18 = pretrain(res18, train_loader, device)
+    res18 = pretrain(res18, train_loader, device, pretrain_path)
 
     # test
     tst_accuracy(res18, test_loader, device)
 
     # train
-    res18 = train(res18)
+    res18 = train(trainer)
 
     # test
     tst_accuracy(res18, test_loader, device)

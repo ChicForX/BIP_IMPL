@@ -32,15 +32,16 @@ class ResNet18(nn.Module):
 
                 # forward using temp weight
                 x = F.conv2d(x, temp_weight, module.bias, module.stride, module.padding, module.dilation, module.groups)
-            elif isinstance(module, nn.Linear) and not self.structured_flag:
-                x = F.adaptive_avg_pool2d(x, (1, 1))
-                x = x.view(x.size(0), -1)
+            elif isinstance(module, nn.Linear):
+                x = torch.flatten(x, 1)
+                if self.structured_flag:
+                    x = module(x)
+                else:
+                    # fine-grained
+                    temp_weight = module.weight.data * module.activate_flag
 
-                # fine-grained
-                temp_weight = module.weight.data * module.activate_flag
-
-                # forward using temp weight
-                x = F.linear(x, temp_weight, module.bias)
+                    # forward using temp weight
+                    x = F.linear(x, temp_weight, module.bias)
             else:
                 # normally forward
                 x = module(x)

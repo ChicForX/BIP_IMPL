@@ -8,7 +8,7 @@ epochs = config_dict['pretrain_epochs']
 pretrain_lr = config_dict['pretrain_lr']
 
 
-def pretrain(model, pretrain_loader, device, model_path='./pretrained_resnet18.pth'):
+def pretrain(model, pretrain_loader, device, model_path):
 
     # check if pretrained model exists
     if os.path.exists(model_path):
