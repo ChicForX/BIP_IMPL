@@ -80,3 +80,14 @@ def unfreeze_vars_by_key(resnet18_instance, key):
         if hasattr(param, key) and getattr(param, key) is not None:
             param.requires_grad = True
     return resnet18_instance
+
+
+# projection for SPGD, 0 or 1
+def spgd_topk_pruning(resnet18_instance, prune_rate):
+    for name, module in resnet18_instance.named_modules():
+        if hasattr(module, 'activate_flag'):
+            active_flag = torch.abs(module.activate_flag.data)
+            threshold = torch.quantile(module.activate_flag, prune_rate)
+            mask = active_flag > threshold
+            module.activate_flag.data = mask.float()
+        return resnet18_instance

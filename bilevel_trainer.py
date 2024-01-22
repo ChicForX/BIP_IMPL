@@ -1,7 +1,7 @@
 import torch.optim as optim
 import torch.nn.functional as F
 from config import config_dict
-from prune_utils import freeze_vars_by_key, unfreeze_vars_by_key, onetime_pruning_by_rate, filter_pruning_by_rate
+from prune_utils import freeze_vars_by_key, unfreeze_vars_by_key, onetime_pruning_by_rate, filter_pruning_by_rate, spgd_topk_pruning
 
 
 class BilevelTrainer:
@@ -34,6 +34,7 @@ class BilevelTrainer:
                     self.model = freeze_vars_by_key(self.model, config_dict['bias_key'])
                     self.model = unfreeze_vars_by_key(self.model, config_dict['activate_key'])
                     self.optimizer_pr.zero_grad()
+
                     if self.structured_flag:
                         self.model = filter_pruning_by_rate(self.model, self.prune_rate)
                     else:
@@ -43,11 +44,15 @@ class BilevelTrainer:
                     loss.backward()
                     self.optimizer_pr.step()
 
+                    # SPGD: projection step
+                    spgd_topk_pruning(self.model, self.prune_rate)
+
                 else:
                     #  --------------- fine-tuning -------------- #
                     self.model = unfreeze_vars_by_key(self.model, config_dict['weight_key'])
                     self.model = unfreeze_vars_by_key(self.model, config_dict['bias_key'])
                     self.model = freeze_vars_by_key(self.model, config_dict['activate_key'])
+
                     self.optimizer_ft.zero_grad()
                     output = self.model(data)
                     loss = F.cross_entropy(output, target)
